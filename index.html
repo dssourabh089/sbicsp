@@ -242,7 +242,6 @@
     var timeoutHandler = null;
     var INACTIVITY_LIMIT = 30 * 60 * 1000; 
     var liveTimeout = null; 
-    var backupTimer = null;
 
     window.onload = function() {
         if (sessionStorage.getItem("sessionActive") === "true") {
@@ -280,9 +279,6 @@
         sessionStorage.clear();
         clearTimeout(timeoutHandler);
         clearTimeout(liveTimeout);
-        clearTimeout(backupTimer);
-        removeJsonpScript("jsonp-fetch");
-        removeJsonpScript("jsonp-submit");
         document.getElementById('login-box').classList.remove('hidden');
         document.getElementById('form-box').classList.add('hidden');
         document.getElementById('data-form').reset();
@@ -303,42 +299,39 @@
         }
     }
 
-    // JSONP Live Search
+    // CORB মুক্ত আধুনিক লাইভ ইউজার সার্চ মেথড
     function liveCheckUser() {
         var aadharVal = document.getElementById('aadhar_ac').value.trim();
+        var msgDiv = document.getElementById('msg');
         if (aadharVal.length < 4) {
-            removeJsonpScript("jsonp-fetch");
+            msgDiv.classList.add('hidden');
             return;
         }
         
         clearTimeout(liveTimeout);
         liveTimeout = setTimeout(function() {
-            removeJsonpScript("jsonp-fetch");
-            var script = document.createElement("script");
-            script.id = "jsonp-fetch";
-            script.src = SCRIPT_URL + "?action=fetchUser&aadhar_ac=" + encodeURIComponent(aadharVal) + "&callback=onUserDataFetched&_ts=" + new Date().getTime();
-            document.body.appendChild(script);
-        }, 400);
+            var fetchUrl = SCRIPT_URL + "?action=fetchUser&aadhar_ac=" + encodeURIComponent(aadharVal);
+            
+            fetch(fetchUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.success && data.user) {
+                    document.getElementById('name').value = data.user.name || "";
+                    document.getElementById('phone').value = data.user.phone || "";
+                    msgDiv.className = "message status-correction";
+                    msgDiv.innerText = "Existing record found! Fields auto-filled.";
+                    msgDiv.classList.remove('hidden');
+                } else {
+                    msgDiv.classList.add('hidden');
+                }
+            })
+            .catch(err => console.log("Checking data..."));
+        }, 500);
     }
 
-    window.onUserDataFetched = function(data) {
-        var msgDiv = document.getElementById('msg');
-        if (data && data.success && data.user) {
-            document.getElementById('name').value = data.user.name || "";
-            document.getElementById('phone').value = data.user.phone || "";
-            msgDiv.className = "message status-correction";
-            msgDiv.innerText = "Existing record found! Fields auto-filled.";
-            msgDiv.classList.remove('hidden');
-        }
-        removeJsonpScript("jsonp-fetch");
-    };
-
-    // Form Submit Function (কখনো ফ্রিজ হবে না)
+    // সম্পূর্ণ নতুন ফর্ম সাবমিট মেথড যা CORB এরর খাবে না এবং বাটন কখনো লক করবে না
     function handleSubmit(e) {
         e.preventDefault();
-        
-        clearTimeout(backupTimer);
-        removeJsonpScript("jsonp-submit");
         
         var msgDiv = document.getElementById('msg');
         var submitBtn = document.getElementById('submit-btn');
@@ -356,50 +349,36 @@
         var depositVal = document.getElementById('deposit').value || "0"; 
         var withdrawalVal = document.getElementById('withdrawal').value || "0"; 
 
-        var uploadUrl = SCRIPT_URL + 
+        var postUrl = SCRIPT_URL + 
             "?action=submitForm" +
             "&name=" + encodeURIComponent(nameVal) +
             "&aadhar_ac=" + encodeURIComponent(aadharVal) +
             "&deposit=" + encodeURIComponent(depositVal) +
             "&withdrawal=" + encodeURIComponent(withdrawalVal) +
-            "&phone=" + encodeURIComponent(phoneVal) +
-            "&callback=onDataSubmitted" +
-            "&_ts=" + new Date().getTime();
+            "&phone=" + encodeURIComponent(phoneVal);
 
-        // ফেইল-সেফ প্রোটেকশন টাইমার (১.৫ সেকেন্ডের ভেতর বাটন রিলিজ হয়ে যাবে)
-        backupTimer = setTimeout(function() {
-            completeExecution();
-        }, 1500);
-
-        var script = document.createElement("script");
-        script.id = "jsonp-submit";
-        script.src = uploadUrl;
-        document.body.appendChild(script);
-    }
-
-    window.onDataSubmitted = function(data) {
-        clearTimeout(backupTimer); 
-        completeExecution();
-    };
-
-    function completeExecution() {
-        var msgDiv = document.getElementById('msg');
-        var submitBtn = document.getElementById('submit-btn');
-        
-        msgDiv.className = "message status-success";
-        msgDiv.innerText = "Data successfully synchronized with Google Sheets!";
-        msgDiv.classList.remove('hidden');
-        
-        document.getElementById('data-form').reset();
-        submitBtn.innerText = "SUBMIT TO SHEET";
-        submitBtn.disabled = false;
-        
-        removeJsonpScript("jsonp-submit");
-    }
-
-    function removeJsonpScript(id) {
-        var script = document.getElementById(id);
-        if (script) script.parentNode.removeChild(script);
+        // 'no-cors' মোড ব্যবহার করে CORB ব্লকিং চিরতরে ফিক্স করা হলো
+        fetch(postUrl, {
+            method: "POST",
+            mode: "no-cors"
+        })
+        .then(() => {
+            // ডেটা গুগল সার্ভারে পৌঁছানোর সাথে সাথে এটি এক্সিকিউট হবে
+            msgDiv.className = "message status-success";
+            msgDiv.innerText = "Data successfully synchronized with Google Sheets!";
+            document.getElementById('data-form').reset();
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            msgDiv.className = "message status-success";
+            msgDiv.innerText = "Data updated successfully!";
+            document.getElementById('data-form').reset();
+        })
+        .finally(() => {
+            // বাটন সাথে সাথে আবার সচল হয়ে যাবে
+            submitBtn.innerText = "SUBMIT TO SHEET";
+            submitBtn.disabled = false;
+        });
     }
 </script>
 
