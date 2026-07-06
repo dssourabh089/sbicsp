@@ -168,11 +168,13 @@
         <h2>Portal Login</h2>
         <div class="form-group">
             <label for="username">User ID</label>
-            <input type="text" id="username" placeholder="Enter User ID" autocomplete="off">
+            <!-- autocomplete যুক্ত করা হয়েছে -->
+            <input type="text" id="username" placeholder="Enter User ID" autocomplete="username">
         </div>
         <div class="form-group">
             <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter Password">
+            <!-- autocomplete যুক্ত করা হয়েছে -->
+            <input type="password" id="password" placeholder="Enter Password" autocomplete="current-password">
         </div>
         <button onclick="handleLogin()">LOGIN</button>
         <p id="login-error"></p>
@@ -185,35 +187,38 @@
         </div>
         <h2>Data Entry Portal</h2>
         
-        <!-- CORB মুক্ত সিকিউর সাবমিশনের জন্য হিডেন আইফ্রেম মেথড ব্যবহার করা হয়েছে -->
+        <!-- হিডেন সেফটি আইফ্রেম -->
         <iframe name="hidden_iframe" id="hidden_iframe" class="hidden" onload="if(typeof iframe_loaded !== 'undefined') iframe_loaded();"></iframe>
         
         <form id="data-form" method="POST" target="hidden_iframe" onsubmit="handleSubmit(event)">
             
             <div class="form-group">
                 <label for="aadhar_ac">Aadhar / AC Number</label>
-                <input type="text" id="aadhar_ac" name="aadhar_ac" required placeholder="Enter Aadhar or AC Number">
+                <!-- autocomplete বন্ধ রাখার জন্য off সেট করা হয়েছে -->
+                <input type="text" id="aadhar_ac" name="aadhar_ac" required placeholder="Enter Aadhar or AC Number" autocomplete="off">
             </div>
 
             <div class="form-group">
                 <label for="name">Full Name</label>
-                <input type="text" id="name" name="name" required placeholder="Customer Full Name">
+                <!-- autocomplete="name" যুক্ত করা হয়েছে -->
+                <input type="text" id="name" name="name" required placeholder="Customer Full Name" autocomplete="name">
             </div>
 
             <div class="form-group">
                 <label for="phone">Phone Number</label>
-                <input type="tel" id="phone" name="phone" required placeholder="10-digit Mobile Number">
+                <!-- autocomplete="tel" যুক্ত করা হয়েছে -->
+                <input type="tel" id="phone" name="phone" required placeholder="10-digit Mobile Number" autocomplete="tel">
             </div>
 
             <div class="input-row">
                 <div class="form-group">
                     <label for="deposit">Deposit (₹)</label>
-                    <input type="number" id="deposit" name="deposit" min="0" placeholder="Amount">
+                    <input type="number" id="deposit" name="deposit" min="0" placeholder="Amount" autocomplete="off">
                 </div>
 
                 <div class="form-group">
                     <label for="withdrawal">Withdrawal (₹)</label>
-                    <input type="number" id="withdrawal" name="withdrawal" min="0" placeholder="Amount">
+                    <input type="number" id="withdrawal" name="withdrawal" min="0" placeholder="Amount" autocomplete="off">
                 </div>
             </div>
 
@@ -285,7 +290,6 @@
         }
     }
 
-    // ফর্ম সাবমিশন ট্রিগার ফাংশন
     function handleSubmit(e) {
         var msgDiv = document.getElementById('msg');
         var submitBtn = document.getElementById('submit-btn');
@@ -298,12 +302,10 @@
         submitBtn.innerText = "SYNCHRONIZING...";
         submitBtn.disabled = true;
 
-        // ডায়নামিক অ্যাকশন ইউআরএল জেনারেট করা
         form.action = SCRIPT_URL;
         isSubmitted = true;
     }
 
-    // আইফ্রেম লোড হওয়ার সাথে সাথে সাকসেস স্টেট এক্সিকিউট হবে (CORB পলিসি একে আটকাতে পারবে না)
     function iframe_loaded() {
         if (!isSubmitted) return;
         
