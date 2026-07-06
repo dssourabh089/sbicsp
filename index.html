@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manikbhander CSP - Secure Portal</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            color: #f1f5f9;
+        }
+        .container {
+            background: rgba(30, 41, 59, 0.7);
+            padding: 40px 30px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            width: 100%;
+            max-width: 460px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .logo-area {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo-area svg {
+            width: 60px;
+            height: 60px;
+            fill: #38bdf8;
+            filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.4));
+        }
+        h2 {
+            margin-bottom: 25px;
+            color: #ffffff;
+            text-align: center;
+            font-weight: 700;
+            font-size: 26px;
+            letter-spacing: -0.5px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            font-size: 15px;
+            color: #f8fafc;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        input:focus {
+            border-color: #38bdf8;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
+            background: #0f172a;
+        }
+        input::placeholder {
+            color: #475569;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 700;
+            margin-top: 10px;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+        button:hover {
+            background: #0ea5e9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        button:disabled {
+            background: #334155;
+            color: #64748b;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 12px;
+            border-radius: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .status-loading {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+        .status-success {
+            color: #4ade80;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.2);
+        }
+        .status-correction {
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+        #login-error {
+            color: #f87171;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .input-row {
+            display: flex;
+            gap: 15px;
+        }
+        .input-row .form-group {
+            flex: 1;
+        }
+        .logout-btn-container {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+        .logout-link {
+            color: #f87171;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .logout-link:hover {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 1. Secure Login Box -->
+    <div id="login-box">
+        <div class="logo-area">
+            <svg viewBox="0 0 24 24">
+                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/>
+            </svg>
+        </div>
+        <h2>Portal Login</h2>
+        <div class="form-group">
+            <label for="username">User ID</label>
+            <input type="text" id="username" placeholder="Enter User ID" autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter Password">
+        </div>
+        <button onclick="handleLogin()">LOGIN</button>
+        <p id="login-error"></p>
+    </div>
+
+    <!-- 2. Data Entry Form Box -->
+    <div id="form-box" class="hidden">
+        <div class="logout-btn-container">
+            <span class="logout-link" onclick="logout()">Logout →</span>
+        </div>
+        <h2>Data Entry Portal</h2>
+        <form id="data-form" onsubmit="handleSubmit(event)">
+            
+            <div class="form-group">
+                <label for="aadhar_ac">Aadhar / AC Number</label>
+                <input type="text" id="aadhar_ac" required placeholder="Enter Aadhar or AC Number" oninput="liveCheckUser()">
+            </div>
+
+            <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" required placeholder="Customer Full Name">
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" required placeholder="10-digit Mobile Number">
+            </div>
+
+            <div class="input-row">
+                <div class="form-group">
+                    <label for="deposit">Deposit (₹)</label>
+                    <input type="number" id="deposit" min="0" placeholder="Amount">
+                </div>
+
+                <div class="form-group">
+                    <label for="withdrawal">Withdrawal (₹)</label>
+                    <input type="number" id="withdrawal" min="0" placeholder="Amount">
+                </div>
+            </div>
+
+            <button type="submit" id="submit-btn">SUBMIT TO SHEET</button>
+        </form>
+        <div id="msg" class="message hidden"></div>
+    </div>
+</div>
+
+<script>
+    // আপনার দেওয়া নতুন Apps Script URLটি এখানে সফলভাবে যুক্ত করা হয়েছে
+    var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyc2MBl9f6vGk6KRo2dorWzcpDDiSFBYvVvF3puLphuFBtTs46HLBryOgNT5kUV0ktBYQ/exec"; 
+    
+    var timeoutHandler = null;
+    var INACTIVITY_LIMIT = 30 * 60 * 1000; 
+    var liveTimeout = null; 
+    var backupTimer = null;
+
+    window.onload = function() {
+        if (sessionStorage.getItem("sessionActive") === "true") {
+            var lastActivity = parseInt(sessionStorage.getItem("lastActivityTime"), 10);
+            if (new Date().getTime() - lastActivity > INACTIVITY_LIMIT) {
+                logout();
+            } else {
+                showFormBox();
+                startInactivityTimer();
+            }
+        }
+    };
+
+    function handleLogin() {
+        var uId = document.getElementById('username').value.trim();
+        var pass = document.getElementById('password').value;
+
+        if (uId === "9366896945" && pass === "Sbi@Csp") {
+            sessionStorage.setItem("sessionActive", "true");
+            sessionStorage.setItem("lastActivityTime", new Date().getTime().toString());
+            showFormBox();
+            startInactivityTimer();
+            document.getElementById('login-error').innerText = "";
+        } else {
+            document.getElementById('login-error').innerText = "Invalid User ID or Password!";
+        }
+    }
+
+    function showFormBox() {
+        document.getElementById('login-box').classList.add('hidden');
+        document.getElementById('form-box').classList.remove('hidden');
+    }
+
+    function logout() {
+        sessionStorage.clear();
+        clearTimeout(timeoutHandler);
+        clearTimeout(liveTimeout);
+        clearTimeout(backupTimer);
+        removeJsonpScript("jsonp-fetch");
+        removeJsonpScript("jsonp-submit");
+        document.getElementById('login-box').classList.remove('hidden');
+        document.getElementById('form-box').classList.add('hidden');
+        document.getElementById('data-form').reset();
+        document.getElementById('msg').classList.add('hidden');
+    }
+
+    function startInactivityTimer() {
+        resetTimer();
+        window.onmousemove = resetTimer;
+        window.onkeypress = resetTimer;
+    }
+
+    function resetTimer() {
+        if (sessionStorage.getItem("sessionActive") === "true") {
+            sessionStorage.setItem("lastActivityTime", new Date().getTime().toString());
+            clearTimeout(timeoutHandler);
+            timeoutHandler = setTimeout(logout, INACTIVITY_LIMIT);
+        }
+    }
+
+    // JSONP Live Search 
+    function liveCheckUser() {
+        var aadharVal = document.getElementById('aadhar_ac').value.trim();
+        if (aadharVal.length < 4) {
+            removeJsonpScript("jsonp-fetch");
+            return;
+        }
+        
+        clearTimeout(liveTimeout);
+        liveTimeout = setTimeout(function() {
+            removeJsonpScript("jsonp-fetch");
+            var script = document.createElement("script");
+            script.id = "jsonp-fetch";
+            script.src = SCRIPT_URL + "?action=fetchUser&aadhar_ac=" + encodeURIComponent(aadharVal) + "&callback=onUserDataFetched&_ts=" + new Date().getTime();
+            document.body.appendChild(script);
+        }, 400);
+    }
+
+    window.onUserDataFetched = function(data) {
+        var msgDiv = document.getElementById('msg');
+        if (data && data.success && data.user) {
+            document.getElementById('name').value = data.user.name || "";
+            document.getElementById('phone').value = data.user.phone || "";
+            msgDiv.className = "message status-correction";
+            msgDiv.innerText = "Existing record found! Fields auto-filled.";
+            msgDiv.classList.remove('hidden');
+        }
+        removeJsonpScript("jsonp-fetch");
+    };
+
+    // Form Submit Function 
+    function handleSubmit(e) {
+        e.preventDefault();
+        
+        clearTimeout(backupTimer);
+        removeJsonpScript("jsonp-submit");
+        
+        var msgDiv = document.getElementById('msg');
+        var submitBtn = document.getElementById('submit-btn');
+        
+        msgDiv.className = "message status-loading";
+        msgDiv.innerText = "Synchronizing data with Google Sheets...";
+        msgDiv.classList.remove('hidden');
+
+        submitBtn.innerText = "SYNCHRONIZING...";
+        submitBtn.disabled = true;
+
+        var nameVal = document.getElementById('name').value;
+        var aadharVal = document.getElementById('aadhar_ac').value;
+        var phoneVal = document.getElementById('phone').value;
+        var depositVal = document.getElementById('deposit').value || "0"; 
+        var withdrawalVal = document.getElementById('withdrawal').value || "0"; 
+
+        var uploadUrl = SCRIPT_URL + 
+            "?action=submitForm" +
+            "&name=" + encodeURIComponent(nameVal) +
+            "&aadhar_ac=" + encodeURIComponent(aadharVal) +
+            "&deposit=" + encodeURIComponent(depositVal) +
+            "&withdrawal=" + encodeURIComponent(withdrawalVal) +
+            "&phone=" + encodeURIComponent(phoneVal) +
+            "&callback=onDataSubmitted" +
+            "&_ts=" + new Date().getTime();
+
+        // ফেইল-সেফ প্রোটেকশন টাইমার (বাটন আটকে না থাকার সর্বোচ্চ নিশ্চয়তা)
+        backupTimer = setTimeout(function() {
+            completeExecution();
+        }, 3000);
+
+        var script = document.createElement("script");
+        script.id = "jsonp-submit";
+        script.src = uploadUrl;
+        document.body.appendChild(script);
+    }
+
+    window.onDataSubmitted = function(data) {
+        clearTimeout(backupTimer); 
+        completeExecution();
+    };
+
+    function completeExecution() {
+        var msgDiv = document.getElementById('msg');
+        var submitBtn = document.getElementById('submit-btn');
+        
+        msgDiv.className = "message status-success";
+        msgDiv.innerText = "Data successfully synchronized with Google Sheets!";
+        msgDiv.classList.remove('hidden');
+        
+        document.getElementById('data-form').reset();
+        submitBtn.innerText = "SUBMIT TO SHEET";
+        submitBtn.disabled = false;
+        
+        removeJsonpScript("jsonp-submit");
+    }
+
+    function removeJsonpScript(id) {
+        var script = document.getElementById(id);
+        if (script) script.parentNode.removeChild(script);
+    }
+</script>
+
+</body>
+</html>
