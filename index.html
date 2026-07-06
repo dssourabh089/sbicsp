@@ -128,6 +128,11 @@
             background: rgba(74, 222, 128, 0.1);
             border: 1px solid rgba(74, 222, 128, 0.2);
         }
+        .status-correction {
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
         #login-error {
             color: #f87171;
             text-align: center;
@@ -168,12 +173,10 @@
         <h2>Portal Login</h2>
         <div class="form-group">
             <label for="username">User ID</label>
-            <!-- autocomplete যুক্ত করা হয়েছে -->
             <input type="text" id="username" placeholder="Enter User ID" autocomplete="username">
         </div>
         <div class="form-group">
             <label for="password">Password</label>
-            <!-- autocomplete যুক্ত করা হয়েছে -->
             <input type="password" id="password" placeholder="Enter Password" autocomplete="current-password">
         </div>
         <button onclick="handleLogin()">LOGIN</button>
@@ -187,26 +190,23 @@
         </div>
         <h2>Data Entry Portal</h2>
         
-        <!-- হিডেন সেফটি আইফ্রেম -->
+        <!-- হিডেন সেফটি আইফ্রেম (সাবমিশনের জন্য) -->
         <iframe name="hidden_iframe" id="hidden_iframe" class="hidden" onload="if(typeof iframe_loaded !== 'undefined') iframe_loaded();"></iframe>
         
         <form id="data-form" method="POST" target="hidden_iframe" onsubmit="handleSubmit(event)">
             
             <div class="form-group">
                 <label for="aadhar_ac">Aadhar / AC Number</label>
-                <!-- autocomplete বন্ধ রাখার জন্য off সেট করা হয়েছে -->
-                <input type="text" id="aadhar_ac" name="aadhar_ac" required placeholder="Enter Aadhar or AC Number" autocomplete="off">
+                <input type="text" id="aadhar_ac" name="aadhar_ac" required placeholder="Enter Aadhar or AC Number" autocomplete="off" oninput="liveCheckUser()">
             </div>
 
             <div class="form-group">
                 <label for="name">Full Name</label>
-                <!-- autocomplete="name" যুক্ত করা হয়েছে -->
                 <input type="text" id="name" name="name" required placeholder="Customer Full Name" autocomplete="name">
             </div>
 
             <div class="form-group">
                 <label for="phone">Phone Number</label>
-                <!-- autocomplete="tel" যুক্ত করা হয়েছে -->
                 <input type="tel" id="phone" name="phone" required placeholder="10-digit Mobile Number" autocomplete="tel">
             </div>
 
@@ -233,6 +233,7 @@
     
     var timeoutHandler = null;
     var INACTIVITY_LIMIT = 30 * 60 * 1000; 
+    var liveTimeout = null;
     var isSubmitted = false;
 
     window.onload = function() {
@@ -270,6 +271,7 @@
     function logout() {
         sessionStorage.clear();
         clearTimeout(timeoutHandler);
+        clearTimeout(liveTimeout);
         document.getElementById('login-box').classList.remove('hidden');
         document.getElementById('form-box').classList.add('hidden');
         document.getElementById('data-form').reset();
@@ -290,6 +292,43 @@
         }
     }
 
+    // ৪MD ব্লকিং এড়াতে নিখুঁত JSONP লাইভ সার্চ মেথড
+    function liveCheckUser() {
+        var aadharVal = document.getElementById('aadhar_ac').value.trim();
+        var msgDiv = document.getElementById('msg');
+        if (aadharVal.length < 4) {
+            msgDiv.classList.add('hidden');
+            removeJsonpScript("jsonp-fetch");
+            return;
+        }
+        
+        clearTimeout(liveTimeout);
+        liveTimeout = setTimeout(function() {
+            removeJsonpScript("jsonp-fetch");
+            
+            var script = document.createElement("script");
+            script.id = "jsonp-fetch";
+            // গুগল ৪MD এড়াতে এখানে callback প্যারামিটার পাস করা হচ্ছে
+            script.src = SCRIPT_URL + "?action=fetchUser&aadhar_ac=" + encodeURIComponent(aadharVal) + "&callback=onUserDataFetched&_ts=" + new Date().getTime();
+            document.body.appendChild(script);
+        }, 400);
+    }
+
+    // গ্লোবাল কলব্যাক ফাংশন যা ডেটা রিসিভ করে অটো-ফিল করবে
+    window.onUserDataFetched = function(data) {
+        var msgDiv = document.getElementById('msg');
+        if (data && data.success && data.user) {
+            document.getElementById('name').value = data.user.name || "";
+            document.getElementById('phone').value = data.user.phone || "";
+            msgDiv.className = "message status-correction";
+            msgDiv.innerText = "Existing record found! Fields auto-filled.";
+            msgDiv.classList.remove('hidden');
+        } else {
+            msgDiv.classList.add('hidden');
+        }
+        removeJsonpScript("jsonp-fetch");
+    };
+
     function handleSubmit(e) {
         var msgDiv = document.getElementById('msg');
         var submitBtn = document.getElementById('submit-btn');
@@ -302,7 +341,7 @@
         submitBtn.innerText = "SYNCHRONIZING...";
         submitBtn.disabled = true;
 
-        form.action = SCRIPT_URL;
+        form.action = SCRIPT_URL + "?action=submitForm";
         isSubmitted = true;
     }
 
@@ -321,6 +360,11 @@
         submitBtn.disabled = false;
         
         isSubmitted = false;
+    }
+
+    function removeJsonpScript(id) {
+        var script = document.getElementById(id);
+        if (script) script.parentNode.removeChild(script);
     }
 </script>
 
