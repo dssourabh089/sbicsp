@@ -100,9 +100,6 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
         }
-        button:active {
-            transform: translateY(1px);
-        }
         button:disabled {
             background: #334155;
             color: #64748b;
@@ -120,11 +117,6 @@
             font-weight: 600;
             padding: 12px;
             border-radius: 10px;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
         }
         .status-loading {
             color: #38bdf8;
@@ -135,11 +127,6 @@
             color: #4ade80;
             background: rgba(74, 222, 128, 0.1);
             border: 1px solid rgba(74, 222, 128, 0.2);
-        }
-        .status-correction {
-            color: #fbbf24;
-            background: rgba(251, 191, 36, 0.1);
-            border: 1px solid rgba(251, 191, 36, 0.2);
         }
         #login-error {
             color: #f87171;
@@ -165,10 +152,6 @@
             font-size: 14px;
             font-weight: 600;
             text-decoration: none;
-            transition: color 0.2s;
-        }
-        .logout-link:hover {
-            color: #ef4444;
         }
     </style>
 </head>
@@ -201,32 +184,36 @@
             <span class="logout-link" onclick="logout()">Logout →</span>
         </div>
         <h2>Data Entry Portal</h2>
-        <form id="data-form" onsubmit="handleSubmit(event)">
+        
+        <!-- CORB মুক্ত সিকিউর সাবমিশনের জন্য হিডেন আইফ্রেম মেথড ব্যবহার করা হয়েছে -->
+        <iframe name="hidden_iframe" id="hidden_iframe" class="hidden" onload="if(typeof iframe_loaded !== 'undefined') iframe_loaded();"></iframe>
+        
+        <form id="data-form" method="POST" target="hidden_iframe" onsubmit="handleSubmit(event)">
             
             <div class="form-group">
                 <label for="aadhar_ac">Aadhar / AC Number</label>
-                <input type="text" id="aadhar_ac" required placeholder="Enter Aadhar or AC Number" oninput="liveCheckUser()">
+                <input type="text" id="aadhar_ac" name="aadhar_ac" required placeholder="Enter Aadhar or AC Number">
             </div>
 
             <div class="form-group">
                 <label for="name">Full Name</label>
-                <input type="text" id="name" required placeholder="Customer Full Name">
+                <input type="text" id="name" name="name" required placeholder="Customer Full Name">
             </div>
 
             <div class="form-group">
                 <label for="phone">Phone Number</label>
-                <input type="tel" id="phone" required placeholder="10-digit Mobile Number">
+                <input type="tel" id="phone" name="phone" required placeholder="10-digit Mobile Number">
             </div>
 
             <div class="input-row">
                 <div class="form-group">
                     <label for="deposit">Deposit (₹)</label>
-                    <input type="number" id="deposit" min="0" placeholder="Amount">
+                    <input type="number" id="deposit" name="deposit" min="0" placeholder="Amount">
                 </div>
 
                 <div class="form-group">
                     <label for="withdrawal">Withdrawal (₹)</label>
-                    <input type="number" id="withdrawal" min="0" placeholder="Amount">
+                    <input type="number" id="withdrawal" name="withdrawal" min="0" placeholder="Amount">
                 </div>
             </div>
 
@@ -241,7 +228,7 @@
     
     var timeoutHandler = null;
     var INACTIVITY_LIMIT = 30 * 60 * 1000; 
-    var liveTimeout = null; 
+    var isSubmitted = false;
 
     window.onload = function() {
         if (sessionStorage.getItem("sessionActive") === "true") {
@@ -278,7 +265,6 @@
     function logout() {
         sessionStorage.clear();
         clearTimeout(timeoutHandler);
-        clearTimeout(liveTimeout);
         document.getElementById('login-box').classList.remove('hidden');
         document.getElementById('form-box').classList.add('hidden');
         document.getElementById('data-form').reset();
@@ -299,42 +285,11 @@
         }
     }
 
-    // CORB মুক্ত আধুনিক লাইভ ইউজার সার্চ মেথড
-    function liveCheckUser() {
-        var aadharVal = document.getElementById('aadhar_ac').value.trim();
-        var msgDiv = document.getElementById('msg');
-        if (aadharVal.length < 4) {
-            msgDiv.classList.add('hidden');
-            return;
-        }
-        
-        clearTimeout(liveTimeout);
-        liveTimeout = setTimeout(function() {
-            var fetchUrl = SCRIPT_URL + "?action=fetchUser&aadhar_ac=" + encodeURIComponent(aadharVal);
-            
-            fetch(fetchUrl)
-            .then(response => response.json())
-            .then(data => {
-                if (data && data.success && data.user) {
-                    document.getElementById('name').value = data.user.name || "";
-                    document.getElementById('phone').value = data.user.phone || "";
-                    msgDiv.className = "message status-correction";
-                    msgDiv.innerText = "Existing record found! Fields auto-filled.";
-                    msgDiv.classList.remove('hidden');
-                } else {
-                    msgDiv.classList.add('hidden');
-                }
-            })
-            .catch(err => console.log("Checking data..."));
-        }, 500);
-    }
-
-    // সম্পূর্ণ নতুন ফর্ম সাবমিট মেথড যা CORB এরর খাবে না এবং বাটন কখনো লক করবে না
+    // ফর্ম সাবমিশন ট্রিগার ফাংশন
     function handleSubmit(e) {
-        e.preventDefault();
-        
         var msgDiv = document.getElementById('msg');
         var submitBtn = document.getElementById('submit-btn');
+        var form = document.getElementById('data-form');
         
         msgDiv.className = "message status-loading";
         msgDiv.innerText = "Synchronizing data with Google Sheets...";
@@ -343,42 +298,27 @@
         submitBtn.innerText = "SYNCHRONIZING...";
         submitBtn.disabled = true;
 
-        var nameVal = document.getElementById('name').value;
-        var aadharVal = document.getElementById('aadhar_ac').value;
-        var phoneVal = document.getElementById('phone').value;
-        var depositVal = document.getElementById('deposit').value || "0"; 
-        var withdrawalVal = document.getElementById('withdrawal').value || "0"; 
+        // ডায়নামিক অ্যাকশন ইউআরএল জেনারেট করা
+        form.action = SCRIPT_URL;
+        isSubmitted = true;
+    }
 
-        var postUrl = SCRIPT_URL + 
-            "?action=submitForm" +
-            "&name=" + encodeURIComponent(nameVal) +
-            "&aadhar_ac=" + encodeURIComponent(aadharVal) +
-            "&deposit=" + encodeURIComponent(depositVal) +
-            "&withdrawal=" + encodeURIComponent(withdrawalVal) +
-            "&phone=" + encodeURIComponent(phoneVal);
-
-        // 'no-cors' মোড ব্যবহার করে CORB ব্লকিং চিরতরে ফিক্স করা হলো
-        fetch(postUrl, {
-            method: "POST",
-            mode: "no-cors"
-        })
-        .then(() => {
-            // ডেটা গুগল সার্ভারে পৌঁছানোর সাথে সাথে এটি এক্সিকিউট হবে
-            msgDiv.className = "message status-success";
-            msgDiv.innerText = "Data successfully synchronized with Google Sheets!";
-            document.getElementById('data-form').reset();
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            msgDiv.className = "message status-success";
-            msgDiv.innerText = "Data updated successfully!";
-            document.getElementById('data-form').reset();
-        })
-        .finally(() => {
-            // বাটন সাথে সাথে আবার সচল হয়ে যাবে
-            submitBtn.innerText = "SUBMIT TO SHEET";
-            submitBtn.disabled = false;
-        });
+    // আইফ্রেম লোড হওয়ার সাথে সাথে সাকসেস স্টেট এক্সিকিউট হবে (CORB পলিসি একে আটকাতে পারবে না)
+    function iframe_loaded() {
+        if (!isSubmitted) return;
+        
+        var msgDiv = document.getElementById('msg');
+        var submitBtn = document.getElementById('submit-btn');
+        
+        msgDiv.className = "message status-success";
+        msgDiv.innerText = "Data successfully synchronized with Google Sheets!";
+        msgDiv.classList.remove('hidden');
+        
+        document.getElementById('data-form').reset();
+        submitBtn.innerText = "SUBMIT TO SHEET";
+        submitBtn.disabled = false;
+        
+        isSubmitted = false;
     }
 </script>
 
