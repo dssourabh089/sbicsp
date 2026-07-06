@@ -237,7 +237,6 @@
 </div>
 
 <script>
-    // আপনার দেওয়া নতুন Apps Script URLটি এখানে সফলভাবে যুক্ত করা হয়েছে
     var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyc2MBl9f6vGk6KRo2dorWzcpDDiSFBYvVvF3puLphuFBtTs46HLBryOgNT5kUV0ktBYQ/exec"; 
     
     var timeoutHandler = null;
@@ -304,7 +303,7 @@
         }
     }
 
-    // JSONP Live Search 
+    // JSONP Live Search
     function liveCheckUser() {
         var aadharVal = document.getElementById('aadhar_ac').value.trim();
         if (aadharVal.length < 4) {
@@ -334,7 +333,7 @@
         removeJsonpScript("jsonp-fetch");
     };
 
-    // Form Submit Function 
+    // Form Submit Function (কখনো ফ্রিজ হবে না)
     function handleSubmit(e) {
         e.preventDefault();
         
@@ -367,10 +366,10 @@
             "&callback=onDataSubmitted" +
             "&_ts=" + new Date().getTime();
 
-        // ফেইল-সেফ প্রোটেকশন টাইমার (বাটন আটকে না থাকার সর্বোচ্চ নিশ্চয়তা)
+        // ফেইল-সেফ প্রোটেকশন টাইমার (১.৫ সেকেন্ডের ভেতর বাটন রিলিজ হয়ে যাবে)
         backupTimer = setTimeout(function() {
             completeExecution();
-        }, 3000);
+        }, 1500);
 
         var script = document.createElement("script");
         script.id = "jsonp-submit";
